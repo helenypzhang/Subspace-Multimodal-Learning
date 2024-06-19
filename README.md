@@ -1,1 +1,1 @@
-# Subspace-Multi-modal-Learning
+# Subspace-Multimodal-Learning

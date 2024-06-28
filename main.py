@@ -32,26 +32,14 @@ def main(gpu, args, wandb_logger):
 
     # training set
     train_dataset_IvYGAP = IvYGAP_Dataset(phase='Train', args=args)
-    # _,_,_ = train_dataset_IvYGAP.read_gene(100)
-    # input_size_omic_IvYGAP = train_dataset_IvYGAP.input_size_omic
-    # input_size_omic_tumor_IvYGAP = train_dataset_IvYGAP.input_size_omic_tumor
-    # input_size_omic_immune_IvYGAP = train_dataset_IvYGAP.input_size_omic_immune
     input_size_omic_IvYGAP = args.input_size_omic
     input_size_omic_tumor_IvYGAP = args.input_size_omic_tumor
     input_size_omic_immune_IvYGAP = args.input_size_omic_immune
     
     train_dataset_TCGA = TCGA_Dataset(phase='Train', args=args)
-    # _,_,_ = train_dataset_TCGA.read_gene(100)
-    # input_size_omic_TCGA = train_dataset_TCGA.input_size_omic
-    # input_size_omic_tumor_TCGA = train_dataset_TCGA.input_size_omic_tumor
-    # input_size_omic_immune_TCGA = train_dataset_TCGA.input_size_omic_immune
     input_size_omic_TCGA = args.input_size_omic
     input_size_omic_tumor_TCGA = args.input_size_omic_tumor
     input_size_omic_immune_TCGA = args.input_size_omic_immune
-    
-    # input_size_omic = input_size_omic_IvYGAP + input_size_omic_TCGA
-    # input_size_omic_tumor = input_size_omic_tumor_IvYGAP + input_size_omic_tumor_TCGA
-    # input_size_omic_immune = input_size_omic_immune_IvYGAP + input_size_omic_immune_TCGA
         
     input_size_omic = args.input_size_omic
     input_size_omic_tumor = args.input_size_omic_tumor
@@ -99,13 +87,8 @@ def main(gpu, args, wandb_logger):
         loaders = (train_loader, test_loader)
     else:
         loaders = (train_loader, val_loader, test_loader)
-    
-    # print('length of trainloader:', len(train_loader)) #36, 36 for 2 gpus; 73, 9, 10 for 1 gpus; batch_size=20
-    # print('length of valloader:', len(val_loader))     #9
-    # print('length of testloader:', len(test_loader))   #10
 
     # # model init
-    # model_tumor = define_net(args, input_size_omic_tumor).cuda()
     model = define_net(args).cuda()
     
     # reload model
@@ -171,7 +154,7 @@ if __name__ == '__main__':
 
     # init wandb if not in debug mode
     if not args.debug:
-        wandb.login(key="5a217af8c48db3869e827b99d99fdf6a6330f04e")
+        wandb.login(key="#")
         config = dict()
 
         for k, v in yaml_config.items():

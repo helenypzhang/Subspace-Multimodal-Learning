@@ -33,10 +33,6 @@ class IvYGAP_Dataset(Dataset):
         self.phase=phase
         self.if_end2end=if_end2end
         
-        # labels_path = self.args.dataDir+'IvYGAP/IvYGAP_new_complete.csv'
-        # if args.survival_interval == "uncensored":
-        #     labels_path = self.args.dataDir+'IvYGAP/multimodal_diag_survival_IvY_uncensored.csv'
-        # else:
         labels_path = self.args.dataDir+'IvYGAP/multimodal_diag_survival_IvY.csv'
         
         excel_label_wsi = pd.read_csv(labels_path, header=0)
@@ -47,29 +43,23 @@ class IvYGAP_Dataset(Dataset):
         random.seed(self.args.seed)
         PATIENT_LIST = list(PATIENT_LIST)
 
-        PATIENT_LIST = np.unique(PATIENT_LIST) # unique PATIENT_LIST:33
+        PATIENT_LIST = np.unique(PATIENT_LIST) 
         np.random.shuffle(PATIENT_LIST)
-        # print('unique len(PATIENT_LIST)', len(PATIENT_LIST)) #unique len(PATIENT_LIST) 33
-        NUM_PATIENT_ALL = len(PATIENT_LIST) # 952; 645 for mmd; 8:1:1= 1472:191:165; 3:2 = 
+        NUM_PATIENT_ALL = len(PATIENT_LIST) 
         
         if args.novalset:
             TRAIN_PATIENT_LIST = PATIENT_LIST[0:int(NUM_PATIENT_ALL * 0.67)]
             TEST_PATIENT_LIST = PATIENT_LIST[int(NUM_PATIENT_ALL * 0.67):]
-            # VAL_PATIENT_LIST = PATIENT_LIST[int(NUM_PATIENT_ALL * 0.9):]
-            # TEST_PATIENT_LIST = PATIENT_LIST[int(NUM_PATIENT_ALL * 0.8):int(NUM_PATIENT_ALL * 0.9)]
             
             self.TRAIN_LIST = []
-            # self.VAL_LIST = []
             self.TEST_LIST = []
-            # print('excel_wsi.shape[0]', excel_wsi.shape[0])
-            for i in range(excel_wsi.shape[0]):# 2612; 1828 for mmd;
+            for i in range(excel_wsi.shape[0]):
                 if excel_wsi[:,0][i] in TRAIN_PATIENT_LIST:
                     self.TRAIN_LIST.append(excel_wsi[i,:])
                 elif excel_wsi[:,0][i] in TEST_PATIENT_LIST:
                     self.TEST_LIST.append(excel_wsi[i,:])
             self.LIST= np.asarray(self.TRAIN_LIST) if self.phase == 'Train' else (np.asarray(self.VAL_LIST) if self.phase == 'Val' else np.asarray(self.TEST_LIST))
-            # print('train_list:', len(self.TRAIN_LIST)) # 1472
-            # print('test_list:', len(self.TEST_LIST)) # 191
+
         else:
             TRAIN_PATIENT_LIST = PATIENT_LIST[0:int(NUM_PATIENT_ALL * 0.8)]
             VAL_PATIENT_LIST = PATIENT_LIST[int(NUM_PATIENT_ALL * 0.9):]
@@ -78,8 +68,7 @@ class IvYGAP_Dataset(Dataset):
             self.TRAIN_LIST = []
             self.VAL_LIST = []
             self.TEST_LIST = []
-            # print('excel_wsi.shape[0]', excel_wsi.shape[0])
-            for i in range(excel_wsi.shape[0]):# 2612; 1828 for mmd;
+            for i in range(excel_wsi.shape[0]):
                 if excel_wsi[:,0][i] in TRAIN_PATIENT_LIST:
                     self.TRAIN_LIST.append(excel_wsi[i,:])
                 elif excel_wsi[:,0][i] in TEST_PATIENT_LIST:
@@ -87,8 +76,6 @@ class IvYGAP_Dataset(Dataset):
                 elif excel_wsi[:,0][i] in VAL_PATIENT_LIST:
                     self.VAL_LIST.append(excel_wsi[i,:])
             self.LIST= np.asarray(self.TRAIN_LIST) if self.phase == 'Train' else (np.asarray(self.VAL_LIST) if self.phase == 'Val' else np.asarray(self.TEST_LIST))
-            # print('train_list:', len(self.TRAIN_LIST)) # 1472
-            # print('test_list:', len(self.TEST_LIST)) # 191
 
         self.train_iter_count=0
         self.Flat=0
@@ -106,7 +93,6 @@ class IvYGAP_Dataset(Dataset):
         self.share_gene_immune = self.share_gene[self.share_gene['Type'] == 'Immune']
         
         self.gene_selected = self.rows_genes[self.rows_genes['gene_symbol'].isin(self.share_gene['gene_symbol'].values.tolist())]
-        # print('IvYGAP self.gene_selected.shape:', self.gene_selected.shape)# IvYGAP self.gene_selected.shape: (431, 5)
         self.gene_selected_tumor= self.rows_genes[self.rows_genes['gene_symbol'].isin(self.share_gene_tumor['gene_symbol'].values.tolist())]
         self.gene_selected_immune= self.rows_genes[self.rows_genes['gene_symbol'].isin(self.share_gene_immune['gene_symbol'].values.tolist())]
         
@@ -140,22 +126,11 @@ class IvYGAP_Dataset(Dataset):
             
         gene_features, gene_features_tumor, gene_features_immune = self.read_gene(index)
         
-
         list_labels=self.label_generation(index)
         
-        
         gene = torch.from_numpy(gene_features).float()
-        # gene = torch.nn.functional.normalize(gene, p=1., dim=0)
-        # scaler = preprocessing.StandardScaler().fit(gene)
-        # gene = scaler.transform(gene)
-        
         gene_tumor = torch.from_numpy(gene_features_tumor).float()
-        # gene_tumor = torch.nn.functional.normalize(gene_tumor, p=1., dim=0)
-        # gene_tumor = scaler.transform(gene_tumor)
-        
         gene_immune = torch.from_numpy(gene_features_immune).float()
-        # gene_immune = torch.nn.functional.normalize(gene_immune, p=1., dim=0)
-        # gene_immune = scaler.transform(gene_immune)
         
         return torch.from_numpy(np.array(wsi_features)).float(), gene, gene_tumor, gene_immune, torch.from_numpy(list_labels)
 
@@ -181,7 +156,6 @@ class IvYGAP_Dataset(Dataset):
             remaining = max_num % num_patches
             for i in range(Use_patch_num):
                 img_temp = io.imread(wsi_path + '/' + str(read_details[i][0]) + '_' + str(read_details[i][1]) + '.jpg')
-                # img_temp = cv2.resize(img_temp, (28, 28))
                 patch_all_ori.append(img_temp)
                 coor_all_ori.append(read_details[i])
             patch_all = patch_all_ori
@@ -197,7 +171,6 @@ class IvYGAP_Dataset(Dataset):
         else:
             for i in range(Use_patch_num):
                 img_temp = io.imread(wsi_path + '/' + str(read_details[int(np.around(i * (num_patches / max_num)))][0]) + '_' + str(read_details[int(np.around(i * (num_patches / max_num)))][1]) + '.jpg')
-                # img_temp = cv2.resize(img_temp, (28, 28))
                 patch_all.append(img_temp)
 
         patch_all = np.asarray(patch_all)
@@ -208,7 +181,6 @@ class IvYGAP_Dataset(Dataset):
         patch_all = patch_all.reshape(max_num, -1)  # (num_patches,28*28*3)
 
         patch_all = patch_all / 255.0
-        # patch_all = np.transpose(patch_all, (0, 3, 1, 2))
         patch_all = patch_all.astype(np.float32)
 
         return patch_all
@@ -235,42 +207,11 @@ class IvYGAP_Dataset(Dataset):
         self.input_size_omic = gene_features.shape[0] #431
         self.input_size_omic_tumor = gene_features_tumor.shape[0] #59
         self.input_size_omic_immune = gene_features_immune.shape[0] #361
-        # print("self.input_size_omic, self.input_size_omic_tumor, self.input_size_omic_immune", 
-            #   self.input_size_omic, self.input_size_omic_tumor, self.input_size_omic_immune)
         
         return gene_features, gene_features_tumor, gene_features_immune
     
 
     def label_generation(self,index):
-
-        '''
-        if self.LIST[index, 4]=='WT':
-            label_IDH=0
-        elif self.LIST[index, 4]=='Mutant':
-            label_IDH=1
-        if self.LIST[index, 5] == 'non-codel':
-            label_1p19q = 0
-        elif self.LIST[index, 5] == 'codel':
-            label_1p19q = 1
-        if self.LIST[index, 6] == -2 or self.LIST[index, 6] == -1:
-            label_CDKN = 1
-        else:
-            label_CDKN = 0
-
-        if self.LIST[index, 2]=='oligoastrocytoma':
-            label_His = 0
-        elif self.LIST[index, 2] == 'astrocytoma':
-            label_His = 1
-        elif self.LIST[index, 2] == 'oligodendroglioma':
-            label_His = 2
-        elif self.LIST[index, 2] == 'glioblastoma':
-            label_His = 3
-
-        if self.LIST[index, 2]=='glioblastoma':
-            label_His_2class = 1
-        else:
-            label_His_2class = 0
-        '''
         
         # grade
         if self.LIST[index, 3]=='G2':
@@ -333,7 +274,6 @@ class IvYGAP_Dataset(Dataset):
         np.random.shuffle(self.LIST)
 
 
-
     def __len__(self):
         return self.LIST.shape[0]
 
@@ -346,10 +286,6 @@ class TCGA_Dataset(Dataset):
         self.phase=phase
         self.if_end2end=if_end2end
         
-        # labels_path = self.args.dataDir+'TCGA/multimodal_complete_TCGA.csv'
-        # if args.survival_interval == "uncensored":
-        #     labels_path = self.args.dataDir+'TCGA/multimodal_diag_survival_TCGA_uncensored.csv'
-        # else:
         labels_path = self.args.dataDir+'TCGA/multimodal_diag_survival_TCGA.csv'
         excel_label_wsi = pd.read_csv(labels_path, header=0)
         excel_wsi = excel_label_wsi.values
@@ -359,32 +295,22 @@ class TCGA_Dataset(Dataset):
         random.seed(self.args.seed)
         PATIENT_LIST = list(PATIENT_LIST)
 
-        PATIENT_LIST = np.unique(PATIENT_LIST) #unique PATIENT_LIST: 952
+        PATIENT_LIST = np.unique(PATIENT_LIST)
         np.random.shuffle(PATIENT_LIST)
-        # print('unique len(PATIENT_LIST)', len(PATIENT_LIST)) #645
-        NUM_PATIENT_ALL = len(PATIENT_LIST) # 952; 645 for mmd; 8:1:1= 1472:191:165
+        NUM_PATIENT_ALL = len(PATIENT_LIST)
         
         if args.novalset:
             TRAIN_PATIENT_LIST = PATIENT_LIST[0:int(NUM_PATIENT_ALL * 0.67)]
             TEST_PATIENT_LIST = PATIENT_LIST[int(NUM_PATIENT_ALL * 0.67):]
-            # VAL_PATIENT_LIST = PATIENT_LIST[int(NUM_PATIENT_ALL * 0.9):]
-            # TEST_PATIENT_LIST = PATIENT_LIST[int(NUM_PATIENT_ALL * 0.8):int(NUM_PATIENT_ALL * 0.9)]
             
             self.TRAIN_LIST = []
-            # self.VAL_LIST = []
             self.TEST_LIST = []
-            # print('excel_wsi.shape[0]', excel_wsi.shape[0])
-            for i in range(excel_wsi.shape[0]):# 2612; 1828 for mmd;
+            for i in range(excel_wsi.shape[0]):
                 if excel_wsi[:,0][i] in TRAIN_PATIENT_LIST:
                     self.TRAIN_LIST.append(excel_wsi[i,:])
-                # elif excel_wsi[:,0][i] in VAL_PATIENT_LIST:
-                #     self.VAL_LIST.append(excel_wsi[i,:])
                 elif excel_wsi[:,0][i] in TEST_PATIENT_LIST:
                     self.TEST_LIST.append(excel_wsi[i,:])
             self.LIST= np.asarray(self.TRAIN_LIST) if self.phase == 'Train' else (np.asarray(self.VAL_LIST) if self.phase == 'Val' else np.asarray(self.TEST_LIST))
-            # print('train_list:', len(self.TRAIN_LIST)) # 1472
-            # print('test_list:', len(self.TEST_LIST)) # 191
-            # print('val_list:', len(self.VAL_LIST)) # 165
         else:
             TRAIN_PATIENT_LIST = PATIENT_LIST[0:int(NUM_PATIENT_ALL * 0.8)]
             VAL_PATIENT_LIST = PATIENT_LIST[int(NUM_PATIENT_ALL * 0.9):]
@@ -393,8 +319,7 @@ class TCGA_Dataset(Dataset):
             self.TRAIN_LIST = []
             self.VAL_LIST = []
             self.TEST_LIST = []
-            # print('excel_wsi.shape[0]', excel_wsi.shape[0])
-            for i in range(excel_wsi.shape[0]):# 2612; 1828 for mmd;
+            for i in range(excel_wsi.shape[0]):
                 if excel_wsi[:,0][i] in TRAIN_PATIENT_LIST:
                     self.TRAIN_LIST.append(excel_wsi[i,:])
                 elif excel_wsi[:,0][i] in VAL_PATIENT_LIST:
@@ -402,15 +327,11 @@ class TCGA_Dataset(Dataset):
                 elif excel_wsi[:,0][i] in TEST_PATIENT_LIST:
                     self.TEST_LIST.append(excel_wsi[i,:])
             self.LIST= np.asarray(self.TRAIN_LIST) if self.phase == 'Train' else (np.asarray(self.VAL_LIST) if self.phase == 'Val' else np.asarray(self.TEST_LIST))
-            # print('train_list:', len(self.TRAIN_LIST)) # 1472
-            # print('test_list:', len(self.TEST_LIST)) # 191
 
         self.train_iter_count=0
         self.Flat=0
         self.WSI_all=[]
         
-        # share_gene_path = self.args.dataDir + 'TCGA' + '/share_gene_signature.csv'
-        # self.share_gene = pd.read_csv(share_gene_path)
         share_gene_path = self.args.dataDir + 'TCGA' + '/gene_signature_selected.xlsx'
         self.share_gene = pd.read_excel(share_gene_path, sheet_name='0.3_high_exp', header=0)
         self.share_gene_tumor = self.share_gene[self.share_gene['Type'] == 'Tumor']
@@ -437,17 +358,8 @@ class TCGA_Dataset(Dataset):
         list_labels=self.label_generation(index)
         
         gene = torch.from_numpy(gene_features).float()
-        # gene = torch.nn.functional.normalize(gene, p=1., dim=0)
-        # scaler = preprocessing.StandardScaler().fit(gene)
-        # gene = scaler.transform(gene)
-        
         gene_tumor = torch.from_numpy(gene_features_tumor).float()
-        # gene_tumor = torch.nn.functional.normalize(gene_tumor, p=1., dim=0)
-        # gene_tumor = scaler.transform(gene_tumor)
-        
         gene_immune = torch.from_numpy(gene_features_immune).float()
-        # gene_immune = torch.nn.functional.normalize(gene_immune, p=1., dim=0)
-        # gene_immune = scaler.transform(gene_immune)
 
         return torch.from_numpy(np.array(wsi_features)).float(), gene, gene_tumor, gene_immune, torch.from_numpy(list_labels)
 
@@ -473,7 +385,6 @@ class TCGA_Dataset(Dataset):
             remaining = max_num % num_patches
             for i in range(Use_patch_num):
                 img_temp = io.imread(wsi_path + '/' + str(read_details[i][0]) + '_' + str(read_details[i][1]) + '.jpg')
-                # img_temp = cv2.resize(img_temp, (28, 28))
                 patch_all_ori.append(img_temp)
                 coor_all_ori.append(read_details[i])
             patch_all = patch_all_ori
@@ -489,7 +400,6 @@ class TCGA_Dataset(Dataset):
         else:
             for i in range(Use_patch_num):
                 img_temp = io.imread(wsi_path + '/' + str(read_details[int(np.around(i * (num_patches / max_num)))][0]) + '_' + str(read_details[int(np.around(i * (num_patches / max_num)))][1]) + '.jpg')
-                # img_temp = cv2.resize(img_temp, (28, 28))
                 patch_all.append(img_temp)
 
         patch_all = np.asarray(patch_all)
@@ -500,7 +410,6 @@ class TCGA_Dataset(Dataset):
         patch_all = patch_all.reshape(max_num, -1)  # (num_patches,28*28*3)
 
         patch_all = patch_all / 255.0
-        # patch_all = np.transpose(patch_all, (0, 3, 1, 2))
         patch_all = patch_all.astype(np.float32)
 
         return patch_all
@@ -513,34 +422,18 @@ class TCGA_Dataset(Dataset):
         gene_df = pd.read_table(gene_path, skiprows=1)
         # remove the rebundant gene_name
         gene_df = gene_df.drop_duplicates(subset=['gene_name'], keep='first')
-        # share_gene = ['IDH1', 'IDH1-AS1','IDH2', 'IDH2-DT', \
-        #     'CDKN2A', 'CDKN2B', "TERT", "BRAF","EGFR" \
-        #     "MYC", "MYCN","MYB", "MYBL1", "MGMT", \
-        #     "NTRK1", "NTRK2","NTRK3", "NTRK3-AS1", \
-        #     "MMP16", "MAML2","MYB", "MYBL1", "MYBL2",\
-        #     "TERT", "TP53","TP53BP2", "TP53INP1", "TP53I13",\
-        #     ] 
         gene_selected = gene_df[gene_df['gene_name'].isin(self.share_gene['gene_symbol'].values.tolist())]
-        # print('TCGA gene_selected.shape:', gene_selected.shape)# TCGA gene_selected.shape: (431, 9)
         gene_features = gene_selected['fpkm_uq_unstranded'].values
-        # print('TCGA gene_features:', gene_features.reshape(-1).shape)
         
         gene_selected_tumor = gene_df[gene_df['gene_name'].isin(self.share_gene_tumor['gene_symbol'].values.tolist())]
-        # print('TCGA gene_selected_tumor.shape:', gene_selected_tumor.shape)# TCGA gene_selected.shape: (431, 9)
-        gene_features_tumor = gene_selected_tumor['fpkm_uq_unstranded'].values
-        # print('TCGA gene_features_tumor:', gene_features_tumor.reshape(-1).shape)        
+        gene_features_tumor = gene_selected_tumor['fpkm_uq_unstranded'].values     
         
         gene_selected_immune = gene_df[gene_df['gene_name'].isin(self.share_gene_immune['gene_symbol'].values.tolist())]
-        # print('TCGA gene_selected_immune.shape:', gene_selected_immune.shape)# TCGA gene_selected.shape: (431, 9)
         gene_features_immune= gene_selected_immune['fpkm_uq_unstranded'].values
-        # print('TCGA gene_features_immune:', gene_features_immune.reshape(-1).shape)
         
         self.input_size_omic = gene_features.shape[0] #431
         self.input_size_omic_tumor = gene_features_tumor.shape[0] #59
         self.input_size_omic_immune = gene_features_immune.shape[0] #361
-
-        # print("self.input_size_omic, self.input_size_omic_tumor, self.input_size_omic_immune", 
-            #   self.input_size_omic, self.input_size_omic_tumor, self.input_size_omic_immune)
         
         return gene_features, gene_features_tumor, gene_features_immune
 
@@ -635,168 +528,3 @@ class TCGA_Dataset(Dataset):
 
     def __len__(self):
         return self.LIST.shape[0]
-    
-'''
-class Our_Dataset_vis(Dataset):
-    def __init__(self, phase,args,if_end2end=False):
-        super(Our_Dataset_vis, self).__init__()
-        self.args = args
-        self.patc_bs=64
-        self.phase=phase
-        self.if_end2end=if_end2end
-        self.dataDir = (args.dataDir+'extract_224/') if args.imgSize[0]==224 else  (args.dataDir+'extract_512/')
-
-        excel_label_wsi = pd.read_excel(args.label_path,sheet_name='Sheet1',header=0)
-        excel_wsi =excel_label_wsi.values
-        PATIENT_LIST=excel_wsi[:,0]
-        np.random.seed(self.args.seed)
-        random.seed(self.args.seed)
-        PATIENT_LIST=list(PATIENT_LIST)
-
-
-        PATIENT_LIST=np.unique(PATIENT_LIST)
-        np.random.shuffle(PATIENT_LIST)
-        NUM_PATIENT_ALL=len(PATIENT_LIST) # 952
-        TEST_PATIENT_LIST=PATIENT_LIST[0:int(NUM_PATIENT_ALL)]
-
-        self.TRAIN_LIST=[]
-        self.VAL_LIST = []
-        self.TEST_LIST = []
-        for i in range(excel_wsi.shape[0]):# 2612
-            if excel_wsi[:,0][i] in TEST_PATIENT_LIST:
-                self.TEST_LIST.append(excel_wsi[i,:])
-        self.LIST= np.asarray(self.TEST_LIST)
-
-
-        self.train_iter_count=0
-        self.Flat=0
-        self.WSI_all=[]
-
-    def __getitem__(self, index):
-        wsi_features, read_details, self.LIST[index, 1]= self.read_feature(index)
-
-        label=self.label_generation(index)
-
-        return torch.from_numpy(np.array(wsi_features)).float(), torch.from_numpy(label), read_details, self.LIST[index, 1]
-
-    def read_feature(self, index):
-        read_details = np.load(self.args.dataDir + 'read_details/' + self.LIST[index, 1] + '.npy', allow_pickle=True)[
-            0]
-        num_patches = read_details.shape[0]
-        root = self.args.dataDir+'Res50_feature_'+str(self.args.fixdim)+'_fixdim0/'
-        patch_all = h5py.File(root + self.LIST[index, 1] + '.h5')['Res_feature'][:]  # (1,N,1024)
-        return patch_all[0],read_details,self.LIST[index, 1]
-
-    def read_img(self, index):
-        wsi_path = self.dataDir + self.LIST[index, 1]
-        patch_all = []
-        patch_all_ori = []
-        coor_all = []
-        coor_all_ori = []
-        self.img_dir = os.listdir(wsi_path)
-
-        read_details = np.load(self.args.dataDir + 'read_details/' + self.LIST[index, 1] + '.npy', allow_pickle=True)[0]
-        num_patches = read_details.shape[0]
-        max_num = self.args.fixdim
-        Use_patch_num = num_patches if num_patches <= max_num else max_num
-        if num_patches <= max_num:
-            times = int(np.floor(max_num / num_patches))
-            remaining = max_num % num_patches
-            for i in range(Use_patch_num):
-                img_temp = io.imread(wsi_path + '/' + str(read_details[i][0]) + '_' + str(read_details[i][1]) + '.jpg')
-                # img_temp = cv2.resize(img_temp, (28, 28))
-                patch_all_ori.append(img_temp)
-                coor_all_ori.append(read_details[i])
-            patch_all = patch_all_ori
-            coor_all = coor_all_ori
-            ####### fixdim0
-            if times > 1:
-                for k in range(times - 1):
-                    patch_all = patch_all + patch_all_ori
-                    coor_all = coor_all + coor_all_ori
-            if not remaining == 0:
-                patch_all = patch_all + patch_all_ori[0:remaining]
-
-        else:
-            for i in range(Use_patch_num):
-                img_temp = io.imread(wsi_path + '/' + str(read_details[int(np.around(i * (num_patches / max_num)))][0]) + '_' + str(read_details[int(np.around(i * (num_patches / max_num)))][1]) + '.jpg')
-                # img_temp = cv2.resize(img_temp, (28, 28))
-                patch_all.append(img_temp)
-
-        patch_all = np.asarray(patch_all)
-
-        # data augmentation
-        patch_all = patch_all.reshape(-1, 224, 3)  # (num_patches*28,28,3)
-        patch_all = patch_all.reshape(-1, 224, 224, 3)  # (num_patches,28,28,3)
-        patch_all = patch_all.reshape(max_num, -1)  # (num_patches,28*28*3)
-
-        patch_all = patch_all / 255.0
-        # patch_all = np.transpose(patch_all, (0, 3, 1, 2))
-        patch_all = patch_all.astype(np.float32)
-
-        return patch_all
-
-    def label_generation(self,index):
-
-
-        if self.LIST[index, 4]=='WT':
-            label_IDH=0
-        elif self.LIST[index, 4]=='Mutant':
-            label_IDH=1
-        if self.LIST[index, 5] == 'non-codel':
-            label_1p19q = 0
-        elif self.LIST[index, 5] == 'codel':
-            label_1p19q = 1
-        if self.LIST[index, 6] == -2 or self.LIST[index, 6] == -1:
-            label_CDKN = 1
-        else:
-            label_CDKN = 0
-
-        if self.LIST[index, 2]=='oligoastrocytoma':
-            label_His = 0
-        elif self.LIST[index, 2] == 'astrocytoma':
-            label_His = 1
-        elif self.LIST[index, 2] == 'oligodendroglioma':
-            label_His = 2
-        elif self.LIST[index, 2] == 'glioblastoma':
-            label_His = 3
-
-        if self.LIST[index, 2]=='glioblastoma':
-            label_His_2class = 1
-        else:
-            label_His_2class = 0
-
-        if self.LIST[index, 3]=='G2':
-            label_Grade=0
-        elif self.LIST[index, 3] == 'G3':
-            label_Grade = 1
-        else:
-            label_Grade=2 #### Useless
-
-
-        if self.LIST[index, 4]=='WT':
-            label_Diag = 0
-        elif self.LIST[index, 5] == 'codel':
-            label_Diag = 3
-        else:
-            if self.LIST[index, 6] == -2 or self.LIST[index, 6] == -1 or self.LIST[index, 3] =='G4':
-                label_Diag = 1
-            else:
-                label_Diag = 2
-
-
-        label=np.asarray([label_IDH,label_1p19q,label_CDKN,label_His,label_Grade,label_Diag,label_His_2class])
-
-        return  label
-
-
-    def shuffle_list(self, seed):
-        np.random.seed(seed)
-        random.seed(seed)
-        np.random.shuffle(self.LIST)
-
-
-
-    def __len__(self):
-        return self.LIST.shape[0]
-'''

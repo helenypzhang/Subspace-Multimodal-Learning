@@ -22,15 +22,9 @@ def cosine_similarity(grad1, grad2):
     return sim
 
 def trainDeformPathomicModel(model, dataloader, optimizer, scheduler, logger, args):
-    # diag2021_loss_func = nn.CrossEntropyLoss() #
-    # 636/1828: (1.0, 4.56, 3.21, 2.65) (636, 288, 409, 495)->( 636+676= 1312, 288, 409, 495)
-    # diag2021: (1.0, 4.15, 2.93, 2.43)
-    # grad: (1.47, 1.51, 1.0)
-    # subtype: (1.0, 1.72, 2.43)
     diag2021_loss_func = nn.CrossEntropyLoss(weight=torch.from_numpy(np.array([1.0, 4.15, 2.93, 2.43])).float().cuda()).cuda()
     grade_loss_func = nn.CrossEntropyLoss(weight=torch.from_numpy(np.array([1.47, 1.51, 1.0])).float().cuda()).cuda()
     subtype_loss_func = nn.CrossEntropyLoss(weight=torch.from_numpy(np.array([1.0, 1.72, 2.43])).float().cuda()).cuda()
-    # survival_loss_func = NLLSurvLoss(alpha=0.0)
     nll_loss_func = NLLSurvLoss(alpha=0.15)
     batch_sim_loss_func = BatchLoss(args.batch_size, args.world_size)  
     softmax = nn.Softmax(dim=1)
@@ -44,8 +38,6 @@ def trainDeformPathomicModel(model, dataloader, optimizer, scheduler, logger, ar
         train_loader, test_loader = dataloader
     else:
         train_loader, val_loader, test_loader = dataloader
-    # print('length of trainloader:', len(train_loader)) #36
-    # print('length of testloader:', len(test_loader))   #10
     cur_lr = args.lr
     if args.task_type == "survival":
         best_cindex = 0.0
@@ -62,16 +54,8 @@ def trainDeformPathomicModel(model, dataloader, optimizer, scheduler, logger, ar
             # np.asarray([0:label_IDH,1:label_1p19q,2:label_CDKN,3:label_His,4:label_Grade,5:label_Diag,6:label_His_2class, 7:label_Subtype, 8:label_survival, 9:label_censor])
             
             # features, path_vec, omic_vec, logits, pred, pred_path, pred_omic, fuse_grads, path_grads, omic_grads
-            # fuse_feat, path_feat, omic_feat, logits, _, _, _ = model(x_path=x_path, x_omic=x_omic, x_omic_tumor=x_omic_tumor, x_omic_immune=x_omic_immune)
             fuse_feat, pathomic_feat_tumor, pathomic_feat_immune, logits, _, _, _ = model(x_path=x_path, x_omic=x_omic, x_omic_tumor=x_omic_tumor, x_omic_immune=x_omic_immune)
-            # print('logits[2].shape:', logits[2].shape)#[8,4]
             S = torch.cumprod(1 - logits[2], dim=1)
-            # print('S.shape:', S.shape) #[8,4]
-
-            # classification loss
-            # loss = diag2021_loss_func(logits[2], label[:, 5])
-            # print('label.shape:', label.shape) #torch.Size([2, 7], 
-            # logits[2] for tumor+immune diagnosis; label[:, 5] is for diagnosis
                 
             if args.task_type == "diag2021":
                 loss3 = diag2021_loss_func(logits[2], label[:, 5])
@@ -89,8 +73,6 @@ def trainDeformPathomicModel(model, dataloader, optimizer, scheduler, logger, ar
                 batch_sim_loss_immune = torch.sum(batch_sim_loss_func(logits[5], logits[6]))
                 batch_sim_loss = 0.5*batch_sim_loss_tumor + 0.5*batch_sim_loss_immune
                 loss = loss3+batch_sim_loss
-            # loss1 = diag2021_loss_func(logits[0], label[:, 5])
-            # loss2 = diag2021_loss_func(logits[1], label[:, 5])
             else:
                 loss = loss3       
             
@@ -150,8 +132,6 @@ def trainDeformPathomicModel(model, dataloader, optimizer, scheduler, logger, ar
                         print("All samples are censored")
                         cindex_t = None
                         cindex_i = None
-                    # score_t = sum([F.softmax(out_t)[i][label[:, 8][i]] for i in range(out_t.size(0))])
-                    # score_i = sum([F.softmax(out_i)[i][label[:, 8][i]] for i in range(out_i.size(0))])
                 elif args.task_type == "grade":
                     score_t = sum([F.softmax(out_t)[i][label[:, 4][i]] for i in range(out_t.size(0))])
                     score_i = sum([F.softmax(out_i)[i][label[:, 4][i]] for i in range(out_i.size(0))])
@@ -177,10 +157,7 @@ def trainDeformPathomicModel(model, dataloader, optimizer, scheduler, logger, ar
                     i_index=0
                     for grad_t, grad_i in zip(model.module.classifier.weight.grad[:, :hs], model.module.classifier.weight.grad[:, hs:]):
                         if grad_t is not None and grad_i is not None:
-                            # print('grad_t.shape:', grad_t.shape) #[128]
-                            # print('grad_i.shape:', grad_i.shape) #[128]
                             sim = cosine_similarity(grad_t, grad_i)
-                            # sim = F.cosine_similarity(grad_t, grad_i)
                             if sim < 0:
                                 if ratio_t < 1:
                                     # Calculate the projection of gradient of classifier_tumor onto the direction perpendicular to gradient of classifier
@@ -313,17 +290,10 @@ def trainDeformPathomicModel(model, dataloader, optimizer, scheduler, logger, ar
                     torch.save(state_dict, saveModelPath)
 
 def trainBaselineModel(model, dataloader, optimizer, scheduler, logger, args):
-    # diag2021_loss_func = nn.CrossEntropyLoss() #
-    # 636/1828: (1.0, 4.56, 3.21, 2.65) (636, 288, 409, 495)->( 636+676= 1312, 288, 409, 495)
-    # diag2021: (1.0, 4.15, 2.93, 2.43)
-    # grad: (1.47, 1.51, 1.0)
-    # subtype: (1.0, 1.72, 2.43)
     diag2021_loss_func = nn.CrossEntropyLoss(weight=torch.from_numpy(np.array([1.0, 4.15, 2.93, 2.43])).float().cuda()).cuda()
     grade_loss_func = nn.CrossEntropyLoss(weight=torch.from_numpy(np.array([1.47, 1.51, 1.0])).float().cuda()).cuda()
     subtype_loss_func = nn.CrossEntropyLoss(weight=torch.from_numpy(np.array([1.0, 1.72, 2.43])).float().cuda()).cuda()
-    # survival_loss_func = NLLSurvLoss(alpha=0.0)
     nll_loss_func = NLLSurvLoss(alpha=0.15)
-    # survival_loss = "nll_surv" if args.mode == "cmta" else "nll_surv"
     survival_criterion = define_loss(survival_loss="nll_surv")
     batch_sim_loss_func = BatchLoss(args.batch_size, args.world_size) 
     sim_loss_func = nn.L1Loss()
@@ -338,8 +308,6 @@ def trainBaselineModel(model, dataloader, optimizer, scheduler, logger, args):
         train_loader, test_loader = dataloader
     else:
         train_loader, val_loader, test_loader = dataloader
-    # print('length of trainloader:', len(train_loader)) #36
-    # print('length of testloader:', len(test_loader))   #10
     cur_lr = args.lr
     if args.task_type == "survival":
         best_cindex = 0.0
@@ -356,8 +324,6 @@ def trainBaselineModel(model, dataloader, optimizer, scheduler, logger, args):
             # np.asarray([0:label_IDH,1:label_1p19q,2:label_CDKN,3:label_His,4:label_Grade,5:label_Diag,6:label_His_2class, 7:label_Subtype, 8:label_survival, 9:label_censor])
             
             # features, path_vec, omic_vec, logits, pred, pred_path, pred_omic, fuse_grads, path_grads, omic_grads
-            # fuse_feat, path_feat, omic_feat, logits, _, _, _ = model(x_path=x_path, x_omic=x_omic, x_omic_tumor=x_omic_tumor, x_omic_immune=x_omic_immune)
-            # fuse_feat, pathomic_feat_tumor, pathomic_feat_immune, logits, _, _, _ = model(x_path=x_path, x_omic=x_omic, x_omic_tumor=x_omic_tumor, x_omic_immune=x_omic_immune)
             if args.mode == 'path':
                 # print('training x_path model')
                 path_vec, logits, _ = model(x_path)  # (BS,2500,1024), x_path x pathology
@@ -377,15 +343,9 @@ def trainBaselineModel(model, dataloader, optimizer, scheduler, logger, args):
                 S = torch.cumprod(1 - hazards, dim=1)
                 
             elif args.mode == 'mcat':
-                logits, hazards, S = model(x_path=x_path, x_omic=x_omic) # return hazards, S, Y_hat, A_raw, results_dict
+                logits, hazards, S = model(x_path=x_path, x_omic=x_omic) 
             elif args.mode == 'cmta':
-                # hazards= model(x_path=x_path, x_omic=x_omic) # return hazards, S, Y_hat, A_raw, results_dict
-                # hazards, S, cls_token_pathomics_encoder, cls_token_pathomics_decoder, cls_token_genomics_encoder, cls_token_genomics_decoder
                 logits, hazards, S, P, P_hat, G, G_hat = model(x_path=x_path, x_omic=x_omic)
-            # classification loss
-            # loss = diag2021_loss_func(logits[2], label[:, 5])
-            # print('label.shape:', label.shape) #torch.Size([2, 7], 
-            # logits[2] for tumor+immune diagnosis; label[:, 5] is for diagnosis
             if args.mode == 'path' or args.mode == 'omic' or args.mode == 'mcat' or args.mode == 'cmta':    
                 if args.task_type == "diag2021":
                     loss3 = diag2021_loss_func(logits, label[:, 5])
@@ -407,8 +367,6 @@ def trainBaselineModel(model, dataloader, optimizer, scheduler, logger, args):
                     loss3 = grade_loss_func(logits[2], label[:, 4])
                 elif args.task_type == "subtype":
                     loss3 = subtype_loss_func(logits[2], label[:, 7]) 
-            # loss1 = diag2021_loss_func(logits[0], label[:, 5])
-            # loss2 = diag2021_loss_func(logits[1], label[:, 5])
             if args.mode == 'cmta':
                 sim_loss_P = sim_loss_func(P.detach(), P_hat)
                 sim_loss_G = sim_loss_func(G.detach(), G_hat)
@@ -524,10 +482,6 @@ def testDeformPathomicModel(model, dataloader, logger, args):
             # Forward pass
             _, _, _, logits, _, _, _ = model(x_path=x_path, x_omic=x_omic, x_omic_tumor=x_omic_tumor, x_omic_immune=x_omic_immune)
             
-            # Compute loss
-            # loss = diag2021_loss_func(logits[2], label[:, 5])
-            # total_loss += loss.item()
-            
             if args.task_type == "diag2021":
                 loss3 = diag2021_loss_func(logits[2], label[:, 5])
             elif args.task_type == "survival":
@@ -544,8 +498,6 @@ def testDeformPathomicModel(model, dataloader, logger, args):
                 batch_sim_loss_immune = torch.sum(batch_sim_loss_func(logits[5], logits[6]))
                 batch_sim_loss = 0.5*batch_sim_loss_tumor + 0.5*batch_sim_loss_immune
                 loss = loss3+batch_sim_loss
-            # loss1 = diag2021_loss_func(logits[0], label[:, 5])
-            # loss2 = diag2021_loss_func(logits[1], label[:, 5])
             else:
                 loss = loss3   
                 
@@ -558,7 +510,6 @@ def testDeformPathomicModel(model, dataloader, logger, args):
         if logger is not None:
             logger.log({'test': {'Average Loss': avg_loss}})
         
-        # Here you could also compute other metrics such as accuracy, F1 score, etc.
         if args.task_type == "survival":
             test_cindex = epochVal_survival(model, test_loader, args)
             if logger is not None:
@@ -615,8 +566,6 @@ def testBaselineModel(model, dataloader, logger, args):
             elif args.mode == 'cmta':
                 logits, hazards, S, P, P_hat, G, G_hat = model(x_path=x_path, x_omic=x_omic)
             # Compute loss
-            # loss = diag2021_loss_func(logits, label[:, 5])
-            # total_loss += loss.item()
             if args.mode == 'path' or args.mode == 'omic':
                 if args.task_type == "diag2021":
                     loss3 = diag2021_loss_func(logits, label[:, 5])
@@ -638,8 +587,6 @@ def testBaselineModel(model, dataloader, logger, args):
                     loss3 = grade_loss_func(logits[2], label[:, 4])
                 elif args.task_type == "subtype":
                     loss3 = subtype_loss_func(logits[2], label[:, 7]) 
-            # loss1 = diag2021_loss_func(logits[0], label[:, 5])
-            # loss2 = diag2021_loss_func(logits[1], label[:, 5])
             loss = loss3   
                 
             total_loss += loss.item() 
@@ -651,7 +598,6 @@ def testBaselineModel(model, dataloader, logger, args):
         if logger is not None:
             logger.log({'test': {'Average Loss': avg_loss}})
         
-        # Here you could also compute other metrics such as accuracy, F1 score, etc.
         if args.task_type == "survival":
             test_cindex = epochBaselineModelVal_survival(model, test_loader, args)
             print('test_cindex:', test_cindex)

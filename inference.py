@@ -36,8 +36,8 @@ def main(gpu, args, wandb_logger):
     # Initialize model
     model = define_net(args).cuda()
 
-    # model_fp = os.path.join(args.checkpoints, "1438_1443gene_epoch_23_AUC_0.814174_ACC_0.534031_.pth")s
-    model_fp = "/home/cbtil3/zhijiang_backup/MMD_all/checkpoints_pathomic_binear/epoch_9_cindex_0.792593_.pth"
+    # model_fp = os.path.join(args.checkpoints, "#")s
+    model_fp = "#"
     if os.path.isfile(model_fp):
         model.load_state_dict(torch.load(model_fp, map_location=args.device.type))
     else:
@@ -71,7 +71,7 @@ if __name__ == '__main__':
 
     # init wandb if not in debug mode
     if not args.debug:
-        wandb.login(key="5a217af8c48db3869e827b99d99fdf6a6330f04e")
+        wandb.login(key="#")
         config = dict()
 
         for k, v in yaml_config.items():

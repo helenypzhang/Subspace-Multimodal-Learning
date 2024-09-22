@@ -1,0 +1,65 @@
+# Dataset options
+fixdim: 2500
+label_path: ./data 
+dataDir: /home/cbtil3/WSI_proj/data/
+dataset: TCGA
+checkpoints: "./checkpoints"
+novalset: False
+
+# Distributed training options
+nodes: 1
+gpus: 2
+visiable_device: "0,1"
+nr: 0
+dataparallel: 0
+workers: 8
+
+# Modality fusion
+fusion_type: "concat" # pathomic_original_pofusion; deform_concat; pathomic_concat_add
+skip: 0
+use_bilinear: 1
+input_size_omic: 431 # gene number
+input_size_omic_tumor: 59
+input_size_omic_immune: 361
+input_path_dim: 1024
+path_gate: 1
+omic_gate: 1
+path_dim: 128
+omic_dim: 128
+path_scale: 1
+omic_scale: 1
+mmhid: 128
+cut_fuse_grad: False
+
+
+# Training options
+reload: False
+seed: 42
+batch_size: 8     #8, 16
+image_size: [224, 224]
+start_epoch: 0
+epochs: 20
+lr: 1.0e-3 
+lr_policy: "cosine"
+dropout_rate: 0.1
+return_grad: False 
+optimizer: "adam"
+weight_decay: 0.1 
+init_type: 'max'
+init_gain: 0.02 
+
+
+# Loss options
+gradient_modulate: True # gradient
+return_vgrid: True # bb loss
+
+# Model options
+mode: 'cmta' # 'path' 'omic' 'pathomic' 'pathomic_original' 'deformpathomic' ->(our) 'mcat' 'cmta'
+attn_dim: 2 # deform
+
+
+# Task for diag2021, grade, subtype
+task_type: "diag2021" #["diag2021", "survival", "grade", "subtype"]
+label_dim: 4 #[4 for "diag2021", 4 for "survival", 3 for "grade", 3 for "subtype"]
+survival_interval: "all" #["uncensored", "all"]
+act_type: 'Sigmoid' # 'LSM'

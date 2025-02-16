@@ -98,8 +98,8 @@ def trainDeformPathomicModel(model, dataloader, optimizer, scheduler, logger, ar
                 elif args.task_type == "survival":
                     hazard_pred_t = torch.sigmoid(out_t)
                     hazard_pred_i = torch.sigmoid(out_i)
-                    S_t = torch.cumprod(1 - out_t, dim=1)
-                    S_i = torch.cumprod(1 - out_i, dim=1)
+                    S_t = torch.cumprod(1 - hazard_pred_t, dim=1)
+                    S_i = torch.cumprod(1 - hazard_pred_i, dim=1)
 
                     loss_nll_t = nll_loss_func(hazards=hazard_pred_t, S=S_t, Y=label[:,8], c=label[:,9], alpha=0)
                     loss_nll_i = nll_loss_func(hazards=hazard_pred_i, S=S_i, Y=label[:,8], c=label[:,9], alpha=0)
